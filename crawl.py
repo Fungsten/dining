@@ -2,7 +2,6 @@ import sys
 from filters import filter_urls, filter_emails, filter_phones
 import requests
 
-
 class WebPage:
 
     def __init__(self, url):
@@ -18,6 +17,7 @@ class WebPage:
         self._url_set = set()
         self._emails = set()
         self._numbers = set()
+        self.text = ""
 
 
     def __hash__(self):
@@ -39,6 +39,7 @@ class WebPage:
         """
 
         r = requests.get(self._url)
+        self.text = self.text + str(r.text)
         if r.status_code == requests.codes.ok:
             for url in filter_urls(r.text):
                 self._url_set.add(url)
@@ -46,6 +47,11 @@ class WebPage:
                 self._emails.add(email)
             for number in filter_phones(r.text):
                 self._numbers.add(number)
+
+    def rawtext(self):
+        """return the everything"""
+
+        return text
 
     def url(self):
         """return the url asssociated with the WebPage"""
@@ -82,6 +88,7 @@ class WebCrawler:
         self.visited_urls = set()
         self._emails = set()
         self._numbers = set()
+        self._rawtext = ""
 
 
     def crawl(self):
@@ -101,6 +108,13 @@ class WebCrawler:
                     print(len(self.visited_urls))
                     self._emails |= w._emails
                     self._numbers |= w._numbers
+                    self._rawtext = self._rawtext + w.text
+
+                #self.visited_urls.add(w.url())
+                #print(len(self.visited_urls))
+                #self._emails |= w._emails
+                #self._numbers |= w._numbers
+                #self._rawtext = self._rawtext + w.text
 
 
     def all_emails(self):
@@ -147,6 +161,7 @@ class WebCrawler:
             f.write('\nPhone Numbers:\n')
             for number in self.all_phones():
                 f.write(number + '\n')
+            f.write(self._rawtext)
 
 def usage():
     print("python3 crawl.py <base_url> <report_file>")
@@ -155,12 +170,12 @@ def usage():
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 3:
-        usage()
-        sys.exit(1)
+    #if len(sys.argv) < 3:
+    #    usage()
+    #    sys.exit(1)
 
-    base_url = sys.argv[1]
-    report_path = sys.argv[2]
+    base_url = "https://dining.williams.edu/eats4ephs/?unitid=27&meal=BREAKFAST"
+    report_path = "text.json"
 
     crawl = WebCrawler(base_url, max_links=1) # until you are confident use small max_links
     crawl.crawl()
